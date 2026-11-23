@@ -3,6 +3,7 @@ const PAGE_SIZE = 80;
 const cardsList = document.querySelector('#cardsList');
 const searchInput = document.querySelector('#searchInput');
 const setFilter = document.querySelector('#setFilter');
+const teamFilter = document.querySelector('#teamFilter');
 const loadMoreButton = document.querySelector('#loadMore');
 const emptyState = document.querySelector('#emptyState');
 const guideDialog = document.querySelector('#cardGuide');
@@ -273,11 +274,13 @@ function updateProgress() {
 function updateFiltered() {
   const q = searchInput.value.trim().toLocaleLowerCase('de');
   const selectedSet = setFilter.value;
+  const selectedTeam = teamFilter.value;
   filtered = allCards.filter(card => {
     const isOwned = owned.has(cardKey(card));
     if (view === 'owned' && !isOwned) return false;
     if (view === 'missing' && isOwned) return false;
     if (selectedSet !== 'all' && card.sectionId !== selectedSet) return false;
+    if (selectedTeam !== 'all' && !card.teams.includes(selectedTeam)) return false;
     if (q && !`${card.number} ${card.player} ${card.set}`.toLocaleLowerCase('de').includes(q)) return false;
     return true;
   });
@@ -355,6 +358,10 @@ async function init() {
     setFilter.append(option);
     section.cards.forEach((card, index) => allCards.push({ ...card, sectionId: section.id, index, set: section.name }));
   });
+  checklist.teams.forEach(team => {
+    const option = document.createElement('option'); option.value = team; option.textContent = team;
+    teamFilter.append(option);
+  });
   try { owned = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); } catch { owned = new Set(); }
   updateProgress(); updateFiltered();
 }
@@ -376,8 +383,9 @@ scanSearch.addEventListener('input', renderScanResults);
 scanDialog.addEventListener('click', event => { if (event.target === scanDialog) scanDialog.close(); });
 searchInput.addEventListener('input', updateFiltered);
 setFilter.addEventListener('change', updateFiltered);
+teamFilter.addEventListener('change', updateFiltered);
 loadMoreButton.addEventListener('click', showMore);
-document.querySelector('#resetButton').addEventListener('click', () => { searchInput.value = ''; setFilter.value = 'all'; setView('all'); });
+document.querySelector('#resetButton').addEventListener('click', () => { searchInput.value = ''; setFilter.value = 'all'; teamFilter.value = 'all'; setView('all'); });
 document.querySelector('#backupButton').addEventListener('click', () => {
   if (confirm('OK: Sammlung exportieren · Abbrechen: Sicherung importieren')) exportCollection();
   else document.querySelector('#importInput').click();

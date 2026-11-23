@@ -10,7 +10,7 @@
   <meta name="description" content="Deine digitale Checkliste für Topps Flagship Football 2026.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css?v=blue-white-7">
+  <link rel="stylesheet" href="styles.css?v=teams-1">
   <title>Topps NFL TC · Flagship Football</title>
 </head>
 <body>
@@ -48,7 +48,7 @@
       <section class="collection">
         <div class="section-head"><div><span class="eyebrow" id="listEyebrow">CHECKLISTE</span><h2 id="listTitle">Alle Karten</h2></div><span class="set-count" id="visibleCount">3.687 KARTEN</span></div>
         <label class="searchbox"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input id="searchInput" type="search" placeholder="Spieler oder Kartennummer suchen…" autocomplete="off"><kbd>⌘ K</kbd></label>
-        <div class="filter-row"><label class="select-wrap"><span>TEILSET</span><select id="setFilter" aria-label="Teilset auswählen"><option value="all">Alle Teilsets</option></select></label><button class="reset-button" id="resetButton">Zurücksetzen</button></div>
+        <div class="filter-row"><label class="select-wrap"><span>TEAM</span><select id="teamFilter" aria-label="NFL-Team auswählen"><option value="all">Alle Teams</option></select></label><label class="select-wrap"><span>TEILSET</span><select id="setFilter" aria-label="Teilset auswählen"><option value="all">Alle Teilsets</option></select></label><button class="reset-button" id="resetButton">Zurücksetzen</button></div>
         <div class="cards-list" id="cardsList" aria-live="polite"></div>
         <button class="load-more" id="loadMore">Mehr Karten anzeigen <span>↓</span></button>
         <div class="empty-state" id="emptyState" hidden><span>⌕</span><strong>Keine Karten gefunden</strong><p>Versuche einen anderen Namen oder eine andere Nummer.</p></div>
@@ -83,6 +83,6 @@
   </dialog>
   <input id="scanInput" type="file" accept="image/*" capture="environment" hidden>
   <input id="importInput" type="file" accept="application/json,.json" hidden>
-  <script src="app.js?v=scan-2" defer></script>
+  <script src="app.js?v=teams-1" defer></script>
 </body>
 </html>
