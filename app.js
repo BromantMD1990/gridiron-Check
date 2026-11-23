@@ -386,7 +386,7 @@ async function importCollection(file) {
   } catch { alert('Diese Datei konnte nicht als Sammlungssicherung gelesen werden.'); }
 }
 async function init() {
-  const response = await fetch('./checklist.json');
+  const response = await fetch('./checklist.json?v=parallel-2');
   if (!response.ok) throw new Error('Die Checkliste konnte nicht geladen werden.');
   checklist = await response.json();
   renderGuide();
