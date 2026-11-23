@@ -10,7 +10,7 @@
   <meta name="description" content="Deine digitale Checkliste für Topps Flagship Football 2026.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css?v=blue-white-2">
+  <link rel="stylesheet" href="styles.css?v=blue-white-3">
   <title>Topps NFL TC · Flagship Football</title>
 </head>
 <body>
@@ -58,7 +58,18 @@
     </main>
     <footer><span>TOPPS NFL TC</span><span>NO PHOTOS · JUST THE CHECKLIST</span></footer>
   </div>
+  <button class="guide-launch" id="guideButton" type="button" aria-haspopup="dialog" aria-controls="cardGuide">
+    <span class="guide-launch-icon" aria-hidden="true">?</span><span>Kartenguide</span>
+  </button>
+  <dialog class="guide-dialog" id="cardGuide" aria-labelledby="guideTitle">
+    <div class="guide-panel">
+      <div class="guide-head"><div><span class="eyebrow">SCHNELL NACHSEHEN</span><h2 id="guideTitle">Kartenguide</h2><p>Finde heraus, was für eine Karte du gezogen hast.</p></div><button class="guide-close" id="guideClose" type="button" aria-label="Kartenguide schließen">×</button></div>
+      <label class="guide-search"><span aria-hidden="true">⌕</span><input id="guideSearch" type="search" placeholder="Teilset oder Begriff suchen…" autocomplete="off"></label>
+      <div class="guide-list" id="guideList" aria-live="polite"></div>
+      <p class="guide-footnote">Hinweis: Parallels (z. B. andere Farben oder Nummerierungen) können zusätzlich zu den hier gelisteten Teilsets vorkommen.</p>
+    </div>
+  </dialog>
   <input id="importInput" type="file" accept="application/json,.json" hidden>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=guide-1" defer></script>
 </body>
 </html>

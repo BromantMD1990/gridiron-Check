@@ -5,12 +5,95 @@ const searchInput = document.querySelector('#searchInput');
 const setFilter = document.querySelector('#setFilter');
 const loadMoreButton = document.querySelector('#loadMore');
 const emptyState = document.querySelector('#emptyState');
+const guideDialog = document.querySelector('#cardGuide');
+const guideSearch = document.querySelector('#guideSearch');
+const guideList = document.querySelector('#guideList');
 let checklist;
 let allCards = [];
 let owned = new Set();
 let view = 'all';
 let rendered = 0;
 let filtered = [];
+
+const guideDescriptions = {
+  'Base Set': 'Die regulären Karten der Hauptserie. Sie zeigen Spieler und Rookies im Standarddesign und bilden den Kern der Sammlung.',
+  '1957 Rookie Variation': 'Rookie-Karten im Stil des klassischen Topps-Football-Designs von 1957. Das Retro-Layout macht sie von der normalen Base-Karte unterscheidbar.',
+  'Clear Variations': 'Eine besondere transparente beziehungsweise klare Designvariante einer Spielerkarte. Achte auf den durchscheinenden Kartenaufbau.',
+  'Golden Mirror Image Variations': 'Alternative Bildmotive im Golden-Mirror-Design. Vergleiche das Foto mit der normalen Base-Karte; das Motiv ist der entscheidende Hinweis.',
+  'Player Number Variations': 'Sondervariante mit Bezug zur Trikotnummer des Spielers. Die Nummer und das abweichende Design helfen beim Erkennen.',
+  'Team Color Border Variations': 'Spielerkarte mit einem Rahmen in den Teamfarben. Prüfe den farbigen Rand und ordne ihn dem Team des Spielers zu.',
+  '1000 Yard Club': 'Würdigt Spieler mit einer Saisonleistung von mindestens 1.000 Yards. Der Name verweist auf die offensive Yard-Marke.',
+  '4000 Yard Club': 'Würdigt Quarterbacks mit mindestens 4.000 Passing Yards in einer Saison.',
+  'All Topps Team': 'Spieler, die für ihre Leistung in ein All-Star-Team der Saison aufgenommen wurden.',
+  'Class of 26': 'Eine thematische Auswahl aus dem Draft-Jahrgang 2026; achte auf den Jahrgangsbezug im Kartendesign.',
+  'Greatest Hits': 'Highlights und prägende Momente aus der Football-Saison stehen im Mittelpunkt.',
+  'All Hail the Champ': 'Tribut an den Champion und den Weg zum Titel.',
+  'All Kings': 'Markante Stars werden als „Kings“ inszeniert; ein eigenständiges thematisches Insert-Design.',
+  'Big Ticket Players': 'Stellt prominente Spieler als die großen Namen beziehungsweise Zugpferde der Liga heraus.',
+  'Big Time Players': 'Insert-Reihe mit Spielern, die in wichtigen Momenten besonders im Fokus stehen.',
+  'Billboard Material': 'Auffälliges, plakatives Design, das den Spieler wie auf einem großen Werbeplakat präsentiert.',
+  'Companion Cards': 'Zusammengehörige Karten, die als Paar oder Ergänzung gestaltet sind. Prüfe Motiv und Nummern auf passende Gegenstücke.',
+  'Conference Kings': 'Stars aus den beiden Conferences werden als Spitzenfiguren ihrer Conference hervorgehoben.',
+  'Divisional Dominance': 'Spieler und Teams, die ihre Division prägen, stehen im Mittelpunkt.',
+  'Funko Base Cards': 'Football-Spieler im typischen Funko-Pop-Figurenstil statt im üblichen Kartenporträt.',
+  'Highlight Reels': 'Karten, die besondere Spielszenen und Highlights visuell aufgreifen.',
+  'NFL Stars': 'Eine zusätzliche Stars-Auswahl mit Spielern aus der NFL; je nach Karte auch mit Autogramm- oder Mehrfachsignatur-Versionen.',
+  'Pressure Cookers': 'Spieler, die unter Druck entscheidende Leistungen bringen, werden thematisch hervorgehoben.',
+  'Ring of Honor': 'Würdigt herausragende Spieler und ihre besonderen Erfolge. Es gibt auch separate Signatures-Karten mit Autogramm.',
+  'Rookie Premiere Autographs': 'Rookie-Karte mit Autogramm aus der Rookie-Premiere-Reihe. Suche nach der echten Unterschrift und dem AUTO-Hinweis.',
+  'Struttin\'': 'Eigenständiges, stilisiertes Spieler-Insert. Das ungewöhnliche Motiv und der Set-Name sind die Erkennungsmerkmale.',
+  'Touchdown': 'Thematische Karten rund um Touchdowns und Scoring-Momente.',
+  'Touchdown Machines': 'Spieler, die für ihre Fähigkeit zu punkten stehen, werden als Touchdown-Spezialisten dargestellt.',
+  'Topps ProFiles': 'Porträtartige Spieler-Profile, die bekannte Namen der Liga in einer eigenen Insert-Gestaltung zeigen.',
+  'Wild Card Moments': 'Unvorhersehbare und besondere Momente aus dem Football stehen im Mittelpunkt.',
+  'Victory Ink': 'Karte mit Spieler-Autogramm und feierlicher Victory-Ink-Gestaltung. „Ink“ weist auf die Unterschrift hin.',
+  'Island Ink': 'Autogramm-Karte aus der Island-Ink-Reihe. Die Unterschrift ist das wichtigste Erkennungsmerkmal.',
+  'Flagship First Signatures': 'Signierte Rookie-Karten, die den ersten Auftritt des Spielers in der Flagship-Serie markieren.',
+  'Flagship First Dual Signatures': 'Zwei Unterschriften auf einer Karte aus der Flagship-First-Reihe.',
+  'Mascot Autographs': 'Autogramm-Karte mit einem Team-Maskottchen als Motiv beziehungsweise Unterzeichner.',
+  'NFL Material Cards': 'Memorabilia-Karte mit einem eingelegten Materialstück. Das Fenster mit Stoff ist der typische Hinweis.',
+  'Rookies Material Cards': 'Rookie-Memorabilia-Karte mit einem eingelegten Materialstück.',
+  'Real One Relics': 'Memorabilia-Karte aus der Real-One-Reihe mit eingelegtem Materialstück.',
+  'Rookie Real One Relics': 'Rookie-Version der Real-One-Relics mit eingelegtem Materialstück.',
+  '1991 Topps Football': 'Retro-Insert im Design der Topps-Football-Karten von 1991. Erkennbar am nostalgischen Layout.',
+  '1991 Topps Rookies Football': 'Rookie-Variante des 1991er-Retro-Designs mit Spielern aus dem aktuellen Rookie-Jahrgang.',
+  'The Flagship Collection Chrome': 'Chrome-Ausführung der Flagship-Collection: glänzende, reflektierende Oberfläche statt Papierfinish.',
+  'The Flagship Collection': 'Eine eigene Auswahl im Flagship-Design, getrennt von den regulären Base-Karten.'
+};
+
+function describeSet(name) {
+  if (guideDescriptions[name]) return guideDescriptions[name];
+  if (/AUTORELIC|Autograph.*Relic|Relic.*Autograph/i.test(name)) return 'Kombiniert ein echtes Spieler-Autogramm mit einem eingelegten Memorabilia-Stück. Achte auf Unterschrift und Materialfenster.';
+  if (/Dual.*Autograph|Triple.*Autograph/i.test(name)) return 'Mehrere Spieler haben dieselbe Karte signiert. „Dual“ steht für zwei, „Triple“ für drei Unterschriften.';
+  if (/Autograph|Signatures|Ink/i.test(name)) return 'Autogramm-Karte: Suche nach der Unterschrift des Spielers und dem AUTO-Hinweis im Set-Namen.';
+  if (/Relic|Material|Swatch|Patch/i.test(name)) return 'Memorabilia-Karte mit einem eingelegten Stoff- oder Materialstück. Ein sichtbares Fenster auf der Karte ist der Hinweis.';
+  if (/Chrome/i.test(name)) return 'Chrome-Karte mit glänzender, reflektierender Oberfläche. Sie kann zusätzlich als Autogramm- oder Insert-Karte vorkommen.';
+  if (/Oversized/i.test(name)) return 'Übergroße Karte. Sie ist deutlich größer als das Standard-Kartenformat.';
+  if (/Rookie/i.test(name)) return 'Rookie-Karte eines Spielers in seiner ersten NFL-Saison. Achte auf den Rookie-Hinweis oder das Rookie-Logo.';
+  return 'Eigenständiges Insert-Teilset mit einem besonderen Thema und eigenem Design. Der Set-Name auf deiner Karte sollte mit diesem Eintrag übereinstimmen.';
+}
+
+function renderGuide() {
+  const query = guideSearch.value.trim().toLocaleLowerCase('de');
+  const sections = (checklist?.sections || []).filter(section => {
+    const description = describeSet(section.name);
+    return !query || `${section.name} ${description}`.toLocaleLowerCase('de').includes(query);
+  });
+  guideList.replaceChildren();
+  if (!sections.length) {
+    const empty = document.createElement('p'); empty.className = 'guide-empty'; empty.textContent = 'Kein passendes Teilset gefunden.'; guideList.append(empty); return;
+  }
+  const fragment = document.createDocumentFragment();
+  sections.forEach(section => {
+    const item = document.createElement('article'); item.className = 'guide-item';
+    const heading = document.createElement('div'); heading.className = 'guide-item-heading';
+    const title = document.createElement('h3'); title.textContent = section.name;
+    const count = document.createElement('span'); count.textContent = format(section.cards.length);
+    const description = document.createElement('p'); description.textContent = describeSet(section.name);
+    heading.append(title, count); item.append(heading, description); fragment.append(item);
+  });
+  guideList.append(fragment);
+}
 
 const format = n => new Intl.NumberFormat('de-DE').format(n);
 function cardKey(card) { return `${card.sectionId}:${card.index}`; }
@@ -110,6 +193,7 @@ async function init() {
   const response = await fetch('./checklist.json');
   if (!response.ok) throw new Error('Die Checkliste konnte nicht geladen werden.');
   checklist = await response.json();
+  renderGuide();
   checklist.sections.forEach(section => {
     const option = document.createElement('option'); option.value = section.id; option.textContent = `${section.name} (${format(section.cards.length)})`;
     setFilter.append(option);
@@ -120,6 +204,10 @@ async function init() {
 }
 
 document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+document.querySelector('#guideButton').addEventListener('click', () => { guideDialog.showModal(); guideSearch.focus(); });
+document.querySelector('#guideClose').addEventListener('click', () => guideDialog.close());
+guideSearch.addEventListener('input', renderGuide);
+guideDialog.addEventListener('click', event => { if (event.target === guideDialog) guideDialog.close(); });
 searchInput.addEventListener('input', updateFiltered);
 setFilter.addEventListener('change', updateFiltered);
 loadMoreButton.addEventListener('click', showMore);
