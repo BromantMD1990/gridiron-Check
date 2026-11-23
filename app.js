@@ -142,11 +142,15 @@ function matchesFromScan(text) {
     const player = scanNormalize(card.player);
     const number = scanNormalize(card.number);
     const setName = scanNormalize(cleanSetName(card.set));
+    // OCR often misses a character or splits a surname. Token matching makes
+    // the suggestion list more useful without ever treating a suggestion as certain.
+    const playerTokens = card.player.toLocaleLowerCase('en').split(/[^a-z0-9]+/).filter(token => token.length >= 3);
+    const tokenHits = playerTokens.filter(token => normalizedText.includes(scanNormalize(token))).length;
     const playerMatch = player.length >= 6 && normalizedText.includes(player);
     const numberMatch = number.length >= 4 && normalizedText.includes(number);
     const setMatch = setName.length >= 9 && normalizedText.includes(setName);
-    const score = (playerMatch ? 8 : 0) + (numberMatch ? 5 : 0) + (setMatch ? 4 : 0);
-    return { card, score, playerMatch, numberMatch, setMatch };
+    const score = (playerMatch ? 8 : 0) + tokenHits * 4 + (numberMatch ? 5 : 0) + (setMatch ? 4 : 0);
+    return { card, score, playerMatch, numberMatch, setMatch, tokenHits };
   }).filter(match => match.score > 0).sort((a, b) => b.score - a.score);
 }
 function addScannedCard(card) {
@@ -172,6 +176,31 @@ function scanResultRow(card) {
   else { action.className = 'scan-mark'; action.textContent = 'Abhaken'; action.addEventListener('click', () => addScannedCard(card)); }
   row.append(details, action);
   return row;
+}
+function preprocessScanImage(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    image.onload = () => {
+      const scale = Math.min(2, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const gray = pixels.data[i] * 0.299 + pixels.data[i + 1] * 0.587 + pixels.data[i + 2] * 0.114;
+        const enhanced = Math.max(0, Math.min(255, (gray - 128) * 1.35 + 128));
+        pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = enhanced;
+      }
+      context.putImageData(pixels, 0, 0);
+      URL.revokeObjectURL(url);
+      resolve(canvas);
+    };
+    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Das Kartenfoto konnte nicht geöffnet werden.')); };
+    image.src = url;
+  });
 }
 function renderScanResults() {
   const query = scanSearch.value.trim().toLocaleLowerCase('de');
@@ -202,19 +231,18 @@ async function scanCard(file) {
   try {
     const worker = await getScanWorker();
     scanStatus.textContent = 'Karte wird gelesen…';
-    const result = await worker.recognize(file);
+    const preparedImage = await preprocessScanImage(file);
+    const result = await worker.recognize(preparedImage);
     const text = result.data.text || '';
     scanMatches = matchesFromScan(text);
-    const unique = scanMatches.length === 1 ? scanMatches[0] : null;
-    const top = scanMatches[0];
-    const clearlyAhead = top && top.score >= 12 && (!scanMatches[1] || top.score > scanMatches[1].score);
-    if (unique || clearlyAhead) {
-      addScannedCard((unique || top).card);
-      return;
-    }
-    if (!scanMatches.length) scanStatus.textContent = 'Kein sicherer Treffer. Du kannst den erkannten Namen hier suchen.';
-    else scanStatus.textContent = `${scanMatches.length} mögliche Treffer erkannt.`;
+    scanStatus.textContent = scanMatches.length
+      ? `${scanMatches.length} Vorschläge. Bitte prüfe den Namen und die Kartennummer und tippe selbst auf „Abhaken“.`
+      : 'Kein passender Vorschlag. Prüfe den erkannten Text oder suche die Karte manuell.';
     renderScanResults();
+    const recognized = document.createElement('details'); recognized.className = 'scan-ocr-details';
+    const summary = document.createElement('summary'); summary.textContent = 'Erkannten Text anzeigen';
+    const output = document.createElement('p'); output.textContent = text.trim() || 'Kein Text erkannt.';
+    recognized.append(summary, output); scanResults.prepend(recognized);
   } catch (error) {
     console.error('Kartenscan fehlgeschlagen', error);
     scanStatus.textContent = error.message || 'Texterkennung fehlgeschlagen.';
