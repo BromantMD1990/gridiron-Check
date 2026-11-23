@@ -212,7 +212,6 @@ async function init() {
 document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
 function openGuide() { if (!guideDialog.open) guideDialog.showModal(); guideSearch.focus(); }
 document.querySelector('#guideButton').addEventListener('click', openGuide);
-document.querySelector('#guideHeaderButton').addEventListener('click', openGuide);
 document.querySelector('#guideClose').addEventListener('click', () => guideDialog.close());
 guideSearch.addEventListener('input', renderGuide);
 guideDialog.addEventListener('click', event => { if (event.target === guideDialog) guideDialog.close(); });
