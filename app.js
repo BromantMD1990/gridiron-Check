@@ -92,10 +92,10 @@ function setView(next) {
   updateFiltered();
 }
 function exportCollection() {
-  const data = { app: 'Gridiron Check', version: 1, set: checklist.product, year: checklist.year, exportedAt: new Date().toISOString(), owned: [...owned] };
+  const data = { app: 'Topps NFL TC', version: 1, set: checklist.product, year: checklist.year, exportedAt: new Date().toISOString(), owned: [...owned] };
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-  link.download = 'gridiron-check-sicherung.json'; link.click(); URL.revokeObjectURL(link.href);
+  link.download = 'topps-nfl-tc-sicherung.json'; link.click(); URL.revokeObjectURL(link.href);
 }
 async function importCollection(file) {
   try {

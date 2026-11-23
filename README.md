@@ -1,4 +1,4 @@
-# Gridiron Check
+# Topps NFL TC
 
 Installierbare Web-App für die Checkliste **2026 Topps Flagship Football**. Die App enthält 3.687 Karten in 71 Teilsets (Basis, Variationen, Inserts und weitere Untersets). Es werden keine Kartenbilder verwendet. Sammlungsdaten bleiben im lokalen Speicher des jeweiligen Browsers.
 
