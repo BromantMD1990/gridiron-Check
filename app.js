@@ -76,8 +76,9 @@ function describeSet(name) {
 function renderGuide() {
   const query = guideSearch.value.trim().toLocaleLowerCase('de');
   const sections = (checklist?.sections || []).filter(section => {
-    const description = describeSet(section.name);
-    return !query || `${section.name} ${description}`.toLocaleLowerCase('de').includes(query);
+    const name = cleanSetName(section.name);
+    const description = describeSet(name);
+    return !query || `${name} ${description}`.toLocaleLowerCase('de').includes(query);
   });
   guideList.replaceChildren();
   if (!sections.length) {
@@ -87,12 +88,17 @@ function renderGuide() {
   sections.forEach(section => {
     const item = document.createElement('article'); item.className = 'guide-item';
     const heading = document.createElement('div'); heading.className = 'guide-item-heading';
-    const title = document.createElement('h3'); title.textContent = section.name;
+    const name = cleanSetName(section.name);
+    const title = document.createElement('h3'); title.textContent = name;
     const count = document.createElement('span'); count.textContent = format(section.cards.length);
-    const description = document.createElement('p'); description.textContent = describeSet(section.name);
+    const description = document.createElement('p'); description.textContent = describeSet(name);
     heading.append(title, count); item.append(heading, description); fragment.append(item);
   });
   guideList.append(fragment);
+}
+
+function cleanSetName(rawName) {
+  return rawName.replace(/\s+/g, ' ').replace(/\s+(?:AUTO|RELIC|AUTORELIC|\d+)(?:\s+(?:AUTO|RELIC|AUTORELIC|\d+))*\s*$/gi, '').trim();
 }
 
 const format = n => new Intl.NumberFormat('de-DE').format(n);
