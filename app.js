@@ -210,7 +210,9 @@ async function init() {
 }
 
 document.querySelectorAll('.tab').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
-document.querySelector('#guideButton').addEventListener('click', () => { guideDialog.showModal(); guideSearch.focus(); });
+function openGuide() { if (!guideDialog.open) guideDialog.showModal(); guideSearch.focus(); }
+document.querySelector('#guideButton').addEventListener('click', openGuide);
+document.querySelector('#guideHeaderButton').addEventListener('click', openGuide);
 document.querySelector('#guideClose').addEventListener('click', () => guideDialog.close());
 guideSearch.addEventListener('input', renderGuide);
 guideDialog.addEventListener('click', event => { if (event.target === guideDialog) guideDialog.close(); });
@@ -235,4 +237,12 @@ init().catch(error => {
   console.error(error);
   document.querySelector('#cardsList').innerHTML = '<div class="empty-state"><strong>Checkliste nicht verfügbar</strong><p>Bitte lade die App über einen Webserver neu.</p></div>';
 });
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+if ('serviceWorker' in navigator) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
