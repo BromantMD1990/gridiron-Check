@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101b2d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gridiron Check">
+  <meta name="description" content="Deine digitale Checkliste für Topps Flagship Football 2026.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+  <title>Gridiron Check · Topps Flagship</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Gridiron Check Startseite">
+        <span class="brand-mark">G<span>·</span></span>
+        <span class="brand-copy"><strong>GRIDIRON</strong><small>CARD CHECKLIST</small></span>
+      </a>
+      <button class="icon-button" id="backupButton" aria-label="Sammlung sichern" title="Sammlung sichern">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+      </button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-kicker"><span class="live-dot"></span> DEINE SAMMLUNG · 2026</div>
+        <h1>Jede Karte.<br><em>Im Blick.</em></h1>
+        <p>Topps Flagship Football — deine persönliche Checkliste.</p>
+        <div class="hero-foot"><span class="season-label">TOPPS FLAGSHIP<br><b>FOOTBALL 2026</b></span><span class="hero-number">26<span>/</span>27</span></div>
+      </section>
+
+      <section class="progress-card" aria-label="Sammlungsfortschritt">
+        <div class="progress-heading"><div><span class="eyebrow">SAMMLUNGSFORTSCHRITT</span><strong id="progressText">0 von 3.687 Karten</strong></div><span class="percent" id="percentText">0%</span></div>
+        <div class="progress-track"><span id="progressBar"></span></div>
+        <div class="progress-meta"><span><i class="dot owned-dot"></i><b id="ownedCount">0</b> gesammelt</span><span><i class="dot missing-dot"></i><b id="missingCount">3.687</b> fehlen</span></div>
+      </section>
+
+      <nav class="tabs" aria-label="Ansichten">
+        <button class="tab active" data-view="all"><span class="tab-icon">▦</span>Alle Karten<span class="tab-count" id="allTabCount">3.687</span></button>
+        <button class="tab" data-view="owned"><span class="tab-icon">✓</span>Meine Karten<span class="tab-count" id="ownedTabCount">0</span></button>
+        <button class="tab" data-view="missing"><span class="tab-icon">＋</span>Fehlt noch<span class="tab-count" id="missingTabCount">3.687</span></button>
+      </nav>
+
+      <section class="collection">
+        <div class="section-head"><div><span class="eyebrow" id="listEyebrow">CHECKLISTE</span><h2 id="listTitle">Alle Karten</h2></div><span class="set-count" id="visibleCount">3.687 KARTEN</span></div>
+        <label class="searchbox"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg><input id="searchInput" type="search" placeholder="Spieler oder Kartennummer suchen…" autocomplete="off"><kbd>⌘ K</kbd></label>
+        <div class="filter-row"><label class="select-wrap"><span>TEILSET</span><select id="setFilter" aria-label="Teilset auswählen"><option value="all">Alle Teilsets</option></select></label><button class="reset-button" id="resetButton">Zurücksetzen</button></div>
+        <div class="cards-list" id="cardsList" aria-live="polite"></div>
+        <button class="load-more" id="loadMore">Mehr Karten anzeigen <span>↓</span></button>
+        <div class="empty-state" id="emptyState" hidden><span>⌕</span><strong>Keine Karten gefunden</strong><p>Versuche einen anderen Namen oder eine andere Nummer.</p></div>
+      </section>
+
+      <section class="note"><span class="note-icon">↗</span><p>Dein Fortschritt wird nur auf diesem Gerät gespeichert. Nutze das Export-Symbol oben, um eine Sicherung zu laden oder wiederherzustellen.</p></section>
+    </main>
+    <footer><span>GRIDIRON CHECK</span><span>NO PHOTOS · JUST THE CHECKLIST</span></footer>
+  </div>
+  <input id="importInput" type="file" accept="application/json,.json" hidden>
+  <script src="app.js" defer></script>
+</body>
+</html>
