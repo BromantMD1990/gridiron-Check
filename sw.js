@@ -1,4 +1,4 @@
-const CACHE = 'topps-nfl-tc-v3';
+const CACHE = 'topps-nfl-tc-v4';
 const FILES = ['./', './index.html', './styles.css', './app.js', './checklist.json', './manifest.webmanifest', './icon.svg'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(Promise.all([
