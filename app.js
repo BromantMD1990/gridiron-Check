@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'gridiron-check-2026-owned-v1';
+const PARALLEL_STORAGE_KEY = 'gridiron-check-2026-parallels-v1';
 const PAGE_SIZE = 80;
 const cardsList = document.querySelector('#cardsList');
 const searchInput = document.querySelector('#searchInput');
@@ -17,6 +18,7 @@ const scanResults = document.querySelector('#scanResults');
 let checklist;
 let allCards = [];
 let owned = new Set();
+let ownedParallels = new Set();
 let view = 'all';
 let rendered = 0;
 let filtered = [];
@@ -255,12 +257,17 @@ async function scanCard(file) {
 const format = n => new Intl.NumberFormat('de-DE').format(n);
 function cardKey(card) { return `${card.sectionId}:${card.index}`; }
 function persist() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...owned])); }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...owned]));
+    localStorage.setItem(PARALLEL_STORAGE_KEY, JSON.stringify([...ownedParallels]));
+  }
   catch (error) { console.warn('Speichern fehlgeschlagen', error); }
 }
 function updateProgress() {
   const total = allCards.length;
   const count = owned.size;
+  const parallelTotal = allCards.filter(card => card.set === 'Base Set').length * (checklist.baseParallels || []).length;
+  document.querySelector('#parallelProgress').textContent = `${format(ownedParallels.size)} von ${format(parallelTotal)} Basiskarten-Parallels gesammelt`;
   const percent = total ? Math.round(count / total * 100) : 0;
   document.querySelector('#progressText').textContent = `${format(count)} von ${format(total)} Karten`;
   document.querySelector('#percentText').textContent = `${percent}%`;
@@ -292,6 +299,7 @@ function rowFor(card) {
   const row = document.createElement('article');
   const isOwned = owned.has(cardKey(card));
   row.className = `card-row${isOwned ? ' owned' : ''}`;
+  const main = document.createElement('div'); main.className = 'card-main';
   const toggle = document.createElement('button');
   toggle.className = 'check-control';
   toggle.type = 'button';
@@ -309,8 +317,34 @@ function rowFor(card) {
   const set = document.createElement('div'); set.className = 'card-set'; set.textContent = card.set;
   details.append(player, set);
   const status = document.createElement('span'); status.className = 'row-status'; status.textContent = isOwned ? 'DA' : 'FEHLT';
-  row.append(toggle, number, details, status);
+  main.append(toggle, number, details, status);
+  row.append(main);
+  if (card.set === 'Base Set') row.append(parallelTracker(card));
   return row;
+}
+function parallelKey(card, index) { return `${cardKey(card)}::${index}`; }
+function parallelTracker(card) {
+  const variants = checklist.baseParallels || [];
+  const tracker = document.createElement('details'); tracker.className = 'parallel-tracker';
+  const summary = document.createElement('summary');
+  const label = document.createElement('span'); label.textContent = 'PARALLELS';
+  const count = document.createElement('span'); count.className = 'parallel-count';
+  const getCount = () => variants.reduce((total, _, index) => total + (ownedParallels.has(parallelKey(card, index)) ? 1 : 0), 0);
+  const updateCount = () => { count.textContent = `${getCount()} / ${variants.length}`; };
+  summary.append(label, count); updateCount(); tracker.append(summary);
+  const list = document.createElement('div'); list.className = 'parallel-list';
+  variants.forEach((variant, index) => {
+    const choice = document.createElement('label'); choice.className = 'parallel-choice';
+    const input = document.createElement('input'); input.type = 'checkbox'; input.checked = ownedParallels.has(parallelKey(card, index));
+    const name = document.createElement('span'); name.textContent = variant;
+    input.addEventListener('change', () => {
+      const key = parallelKey(card, index);
+      if (input.checked) ownedParallels.add(key); else ownedParallels.delete(key);
+      persist(); updateCount(); updateProgress();
+    });
+    choice.append(input, name); list.append(choice);
+  });
+  tracker.append(list); return tracker;
 }
 function showMore() {
   const next = filtered.slice(rendered, rendered + PAGE_SIZE);
@@ -334,7 +368,7 @@ function setView(next) {
   updateFiltered();
 }
 function exportCollection() {
-  const data = { app: 'Topps NFL TC', version: 1, set: checklist.product, year: checklist.year, exportedAt: new Date().toISOString(), owned: [...owned] };
+  const data = { app: 'Topps NFL TC', version: 2, set: checklist.product, year: checklist.year, exportedAt: new Date().toISOString(), owned: [...owned], parallels: [...ownedParallels] };
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   link.download = 'topps-nfl-tc-sicherung.json'; link.click(); URL.revokeObjectURL(link.href);
@@ -345,6 +379,9 @@ async function importCollection(file) {
     if (!Array.isArray(data.owned)) throw new Error('Ungültiges Sicherungsformat');
     const valid = new Set(allCards.map(cardKey));
     owned = new Set(data.owned.filter(key => valid.has(key)));
+    const validParallels = new Set();
+    allCards.filter(card => card.set === 'Base Set').forEach(card => (checklist.baseParallels || []).forEach((_, index) => validParallels.add(parallelKey(card, index))));
+    ownedParallels = new Set(Array.isArray(data.parallels) ? data.parallels.filter(key => validParallels.has(key)) : []);
     persist(); updateProgress(); updateFiltered();
   } catch { alert('Diese Datei konnte nicht als Sammlungssicherung gelesen werden.'); }
 }
@@ -363,6 +400,7 @@ async function init() {
     teamFilter.append(option);
   });
   try { owned = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); } catch { owned = new Set(); }
+  try { ownedParallels = new Set(JSON.parse(localStorage.getItem(PARALLEL_STORAGE_KEY) || '[]')); } catch { ownedParallels = new Set(); }
   updateProgress(); updateFiltered();
 }
 
