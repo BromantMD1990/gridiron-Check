@@ -1,5 +1,5 @@
-const CACHE = 'topps-nfl-tc-v11';
-const FILES = ['./', './index.html', './styles.css', './app.js', './checklist.json', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'topps-nfl-tc-v12';
+const FILES = ['./', './index.html', './styles.css?v=blue-white-7', './app.js?v=scan-1', './checklist.json', './manifest.webmanifest', './icon.svg'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(Promise.all([
   caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))),

@@ -8,12 +8,20 @@ const emptyState = document.querySelector('#emptyState');
 const guideDialog = document.querySelector('#cardGuide');
 const guideSearch = document.querySelector('#guideSearch');
 const guideList = document.querySelector('#guideList');
+const scanInput = document.querySelector('#scanInput');
+const scanDialog = document.querySelector('#scanDialog');
+const scanStatus = document.querySelector('#scanStatus');
+const scanSearch = document.querySelector('#scanSearch');
+const scanResults = document.querySelector('#scanResults');
 let checklist;
 let allCards = [];
 let owned = new Set();
 let view = 'all';
 let rendered = 0;
 let filtered = [];
+let scanMatches = [];
+let scanWorkerPromise;
+let tesseractScriptPromise;
 
 const guideDescriptions = {
   'Base Set': 'Die regulären Karten der Hauptserie. Sie zeigen Spieler und Rookies im Standarddesign und bilden den Kern der Sammlung.',
@@ -99,6 +107,120 @@ function renderGuide() {
 
 function cleanSetName(rawName) {
   return rawName.replace(/\s+/g, ' ').replace(/\s+(?:AUTO|RELIC|AUTORELIC|\d+)(?:\s+(?:AUTO|RELIC|AUTORELIC|\d+))*\s*$/gi, '').trim();
+}
+
+function scanNormalize(value) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('en').replace(/[^a-z0-9]/g, '');
+}
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  if (!tesseractScriptPromise) tesseractScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.crossOrigin = 'anonymous';
+    script.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Texterkennung konnte nicht gestartet werden.'));
+    script.onerror = () => reject(new Error('Texterkennung konnte nicht geladen werden. Prüfe deine Internetverbindung.'));
+    document.head.append(script);
+  });
+  return tesseractScriptPromise;
+}
+async function getScanWorker() {
+  if (!scanWorkerPromise) scanWorkerPromise = loadTesseract().then(Tesseract => Tesseract.createWorker('eng', 1, {
+    logger: message => {
+      if (message.status === 'loading tesseract core') scanStatus.textContent = 'Texterkennung wird geladen…';
+      else if (message.status === 'loading language traineddata') scanStatus.textContent = 'Sprachmodell wird geladen…';
+      else if (message.status === 'recognizing text') scanStatus.textContent = `Karte wird gelesen… ${Math.round((message.progress || 0) * 100)}%`;
+    }
+  }));
+  try { return await scanWorkerPromise; }
+  catch (error) { scanWorkerPromise = null; throw error; }
+}
+function matchesFromScan(text) {
+  const normalizedText = scanNormalize(text);
+  if (!normalizedText) return [];
+  return allCards.map(card => {
+    const player = scanNormalize(card.player);
+    const number = scanNormalize(card.number);
+    const setName = scanNormalize(cleanSetName(card.set));
+    const playerMatch = player.length >= 6 && normalizedText.includes(player);
+    const numberMatch = number.length >= 4 && normalizedText.includes(number);
+    const setMatch = setName.length >= 9 && normalizedText.includes(setName);
+    const score = (playerMatch ? 8 : 0) + (numberMatch ? 5 : 0) + (setMatch ? 4 : 0);
+    return { card, score, playerMatch, numberMatch, setMatch };
+  }).filter(match => match.score > 0).sort((a, b) => b.score - a.score);
+}
+function addScannedCard(card) {
+  const key = cardKey(card);
+  if (!owned.has(key)) {
+    owned.add(key); persist(); updateProgress(); updateFiltered();
+  }
+  scanStatus.textContent = `${card.player} · #${card.number} ist jetzt abgehakt.`;
+  const message = document.createElement('p'); message.className = 'scan-success';
+  message.textContent = `${card.player} · #${card.number} · ${cleanSetName(card.set)}`;
+  const again = document.createElement('button'); again.className = 'scan-again'; again.type = 'button'; again.textContent = 'Nächste Karte scannen';
+  again.addEventListener('click', () => scanInput.click());
+  scanResults.replaceChildren(message, again);
+}
+function scanResultRow(card) {
+  const row = document.createElement('article'); row.className = 'scan-result-row';
+  const details = document.createElement('div'); details.className = 'scan-result-details';
+  const player = document.createElement('strong'); player.textContent = card.player;
+  const info = document.createElement('span'); info.textContent = `#${card.number} · ${cleanSetName(card.set)}`;
+  details.append(player, info);
+  const action = document.createElement('button'); action.type = 'button';
+  if (owned.has(cardKey(card))) { action.className = 'scan-owned'; action.textContent = 'Schon da'; action.disabled = true; }
+  else { action.className = 'scan-mark'; action.textContent = 'Abhaken'; action.addEventListener('click', () => addScannedCard(card)); }
+  row.append(details, action);
+  return row;
+}
+function renderScanResults() {
+  const query = scanSearch.value.trim().toLocaleLowerCase('de');
+  let matches = scanMatches;
+  if (query) matches = allCards.filter(card => `${card.player} ${card.number} ${cleanSetName(card.set)}`.toLocaleLowerCase('de').includes(query));
+  scanResults.replaceChildren();
+  if (!matches.length) {
+    const empty = document.createElement('p'); empty.className = 'scan-empty';
+    empty.textContent = query ? 'Keine passende Karte gefunden. Ändere den Suchbegriff.' : 'Kein eindeutiger Treffer erkannt. Suche nach Spielername, Kartennummer oder Teilset.';
+    scanResults.append(empty); return;
+  }
+  const intro = document.createElement('p'); intro.className = 'scan-match-intro';
+  intro.textContent = query ? 'Suchtreffer – wähle die passende Karte:' : 'Mögliche Treffer – wähle die richtige Karte:';
+  scanResults.append(intro);
+  const fragment = document.createDocumentFragment();
+  matches.slice(0, 40).forEach(match => fragment.append(scanResultRow(match.card || match)));
+  scanResults.append(fragment);
+  if (matches.length > 40) {
+    const more = document.createElement('p'); more.className = 'scan-empty'; more.textContent = 'Viele Treffer. Verfeinere deine Suche mit der Kartennummer oder dem Teilset.'; scanResults.append(more);
+  }
+}
+async function scanCard(file) {
+  scanDialog.showModal();
+  scanStatus.textContent = 'Texterkennung wird vorbereitet…';
+  scanResults.replaceChildren();
+  scanSearch.value = '';
+  scanMatches = [];
+  try {
+    const worker = await getScanWorker();
+    scanStatus.textContent = 'Karte wird gelesen…';
+    const result = await worker.recognize(file);
+    const text = result.data.text || '';
+    scanMatches = matchesFromScan(text);
+    const unique = scanMatches.length === 1 ? scanMatches[0] : null;
+    const top = scanMatches[0];
+    const clearlyAhead = top && top.score >= 12 && (!scanMatches[1] || top.score > scanMatches[1].score);
+    if (unique || clearlyAhead) {
+      addScannedCard((unique || top).card);
+      return;
+    }
+    if (!scanMatches.length) scanStatus.textContent = 'Kein sicherer Treffer. Du kannst den erkannten Namen hier suchen.';
+    else scanStatus.textContent = `${scanMatches.length} mögliche Treffer erkannt.`;
+    renderScanResults();
+  } catch (error) {
+    console.error('Kartenscan fehlgeschlagen', error);
+    scanStatus.textContent = error.message || 'Texterkennung fehlgeschlagen.';
+    const hint = document.createElement('p'); hint.className = 'scan-empty'; hint.textContent = 'Du kannst die Karte unten auch manuell suchen.';
+    scanResults.replaceChildren(hint);
+  }
 }
 
 const format = n => new Intl.NumberFormat('de-DE').format(n);
@@ -215,6 +337,15 @@ document.querySelector('#guideButton').addEventListener('click', openGuide);
 document.querySelector('#guideClose').addEventListener('click', () => guideDialog.close());
 guideSearch.addEventListener('input', renderGuide);
 guideDialog.addEventListener('click', event => { if (event.target === guideDialog) guideDialog.close(); });
+document.querySelector('#scanButton').addEventListener('click', () => scanInput.click());
+document.querySelector('#scanClose').addEventListener('click', () => scanDialog.close());
+scanInput.addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (file) await scanCard(file);
+  event.target.value = '';
+});
+scanSearch.addEventListener('input', renderScanResults);
+scanDialog.addEventListener('click', event => { if (event.target === scanDialog) scanDialog.close(); });
 searchInput.addEventListener('input', updateFiltered);
 setFilter.addEventListener('change', updateFiltered);
 loadMoreButton.addEventListener('click', showMore);

@@ -10,7 +10,7 @@
   <meta name="description" content="Deine digitale Checkliste für Topps Flagship Football 2026.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css?v=blue-white-6">
+  <link rel="stylesheet" href="styles.css?v=blue-white-7">
   <title>Topps NFL TC · Flagship Football</title>
 </head>
 <body>
@@ -58,6 +58,9 @@
     </main>
     <footer><span>TOPPS NFL TC</span><span>NO PHOTOS · JUST THE CHECKLIST</span></footer>
   </div>
+  <button class="scan-launch" id="scanButton" type="button" aria-label="Karte mit der Kamera scannen">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Karte scannen</span>
+  </button>
   <button class="guide-launch" id="guideButton" type="button" aria-haspopup="dialog" aria-controls="cardGuide">
     <span class="guide-launch-icon" aria-hidden="true">?</span><span>Kartenguide</span>
   </button>
@@ -69,7 +72,17 @@
       <p class="guide-footnote">Hinweis: Parallels (z. B. andere Farben oder Nummerierungen) können zusätzlich zu den hier gelisteten Teilsets vorkommen.</p>
     </div>
   </dialog>
+  <dialog class="scan-dialog" id="scanDialog" aria-labelledby="scanTitle">
+    <div class="scan-panel">
+      <div class="scan-head"><div><span class="eyebrow">KAMERA · TEXTERKENNUNG</span><h2 id="scanTitle">Karte scannen</h2><p>Der erkannte Spielername wird mit der Checkliste abgeglichen.</p></div><button class="guide-close" id="scanClose" type="button" aria-label="Scanner schließen">×</button></div>
+      <div class="scan-status" id="scanStatus" role="status" aria-live="polite">Richte die Karte möglichst gerade und gut beleuchtet aus.</div>
+      <label class="scan-search"><span aria-hidden="true">⌕</span><input id="scanSearch" type="search" placeholder="Spieler oder Kartennummer suchen…" autocomplete="off"></label>
+      <div class="scan-results" id="scanResults" aria-live="polite"></div>
+      <p class="scan-footnote">Das Foto wird nur auf diesem Gerät erkannt und nicht gespeichert. Beim ersten Scan ist eine Internetverbindung nötig, um die Texterkennung zu laden.</p>
+    </div>
+  </dialog>
+  <input id="scanInput" type="file" accept="image/*" capture="environment" hidden>
   <input id="importInput" type="file" accept="application/json,.json" hidden>
-  <script src="app.js?v=guide-5" defer></script>
+  <script src="app.js?v=scan-1" defer></script>
 </body>
 </html>
